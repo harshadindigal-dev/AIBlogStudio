@@ -39,7 +39,7 @@ Give Autopilot a company name, target audience, description, topic list, and a p
 
 ---
 
-## Coming soon — AIBlogStudio Pro
+## Coming soon — AI BlogStudio Pro
 
 A dedicated hosted platform is in development. The open-source version you're running today will remain free; the features below will be available to paid members on the website.
 
