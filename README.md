@@ -72,11 +72,16 @@ Define your company's writing rules once. Every generation call inherits them au
 - **Proprietary context blocks:** Multi-paragraph positioning statements, regulatory boilerplate, and internal glossaries injected verbatim for relevant post categories.
 - **Auditability:** Every draft records which variable snapshot was active at generation time.
 
-### CMS publishing & analytics *(roadmap)*
+### Pillar 4 — Automatic SEO & Internal Linking
 
-- One-click publish to WordPress, Webflow, and Ghost via their respective APIs.
-- Brand voice lint pass after generation — automatic scan for forbidden claims and tone violations before a post reaches the editor.
-- Usage dashboard: posts generated / approved / published per week, token spend, and image generation costs per project.
+Every post you publish is a potential SEO asset — but only if it's properly connected to the rest of your content. This pillar analyzes your entire blog catalog and automatically weaves in the internal links, anchor text, and metadata that search engines reward.
+
+- **Content graph:** All published posts are indexed by topic, keyword, and semantic embedding. When a new post is generated, the system identifies the most relevant existing posts and injects contextual internal links at the most natural anchor points in the prose.
+- **Anchor text optimization:** Links are inserted with descriptive, keyword-rich anchor text derived from the target post's title and focus keywords — never generic "click here" text.
+- **Keyword gap analysis:** Before drafting, the system scans top-ranking competitor pages for the target topic and surfaces keywords your existing catalog is missing. Those gaps are passed to the outline generator so your new post fills them.
+- **Meta description & title tag generation:** Each post gets an auto-generated SEO title (≤60 chars) and meta description (≤155 chars) optimized for click-through rate, with primary and secondary keywords placed naturally.
+- **Canonical & schema markup:** Structured data (Article, BreadcrumbList, FAQ where applicable) is emitted automatically on export so search engines can parse your content without guesswork.
+- **Backlink suggestions:** Post-generation, the system surfaces a shortlist of high-authority external pages that are topically relevant and likely to link back — giving your outreach team a pre-qualified target list rather than a cold prospecting problem.
 
 ---
 
