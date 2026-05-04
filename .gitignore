@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Python virtual environment
+backend/venv/
+venv/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Generated runtime data (not source)
+backend/blog_assets/
+backend/blog_projects/
+
+# Test artifacts
+backend/test_output.png
+
+# Build output
+dist/
+build/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
