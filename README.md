@@ -1,4 +1,4 @@
-# AIBlogStudio
+# AI BlogStudio
 
 An AI-powered blog authoring workspace. Plan a content calendar, draft posts section-by-section with an LLM co-pilot, generate matching images, and export the result to Markdown or HTML.
 
