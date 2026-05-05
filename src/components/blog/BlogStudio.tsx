@@ -540,131 +540,162 @@ export function BlogStudio() {
               <CopilotStepper phase={copilotPhase} />
 
               <div className="flex-1 flex overflow-hidden">
-                {/* Left: editor / outline */}
-                <div className="flex-1 flex flex-col overflow-hidden">
 
-                  {copilotPhase === 'brainstorm' && (
-                    <div className="flex-1 flex items-center justify-center p-8">
-                      <div className="text-center space-y-5 max-w-sm">
-                        <div className="relative mx-auto w-16 h-16">
+                {/* BRAINSTORM: chat center, generate outline right */}
+                {copilotPhase === 'brainstorm' && (
+                  <>
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      <ChatPanel
+                        messages={chatMessages}
+                        onMessagesChange={setChatMessages}
+                        systemPrompt="You are a creative blog content strategist. Help the user brainstorm blog post ideas. Ask clarifying questions about their topic, audience, tone, and key points they want to cover. Be concise and helpful."
+                        placeholder="Describe your blog idea..."
+                      />
+                    </div>
+                    <div className="w-72 border-l border-cyan-precision/10 glass flex flex-col items-center justify-center p-7 gap-6 shrink-0">
+                      <div className="text-center space-y-4">
+                        <div className="relative mx-auto w-14 h-14">
                           <div className="absolute inset-0 rounded-2xl neon-breathe"
                             style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)' }} />
                           <div className="relative w-full h-full flex items-center justify-center">
-                            <Sparkles size={28} className="text-plasma" />
+                            <Sparkles size={24} className="text-plasma" />
                           </div>
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold gradient-text-warm">Brainstorm with AI</h3>
-                          <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                            Chat with the AI on the right to explore your topic. When ready, generate your structured outline.
+                          <h3 className="text-sm font-bold gradient-text-warm">Ready to outline?</h3>
+                          <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                            Chat until you've shaped your idea, then generate a structured outline.
                           </p>
                         </div>
-                        <button
-                          onClick={copilotGenerateOutline}
-                          disabled={chatMessages.length < 2}
-                          className="btn-neon px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 mx-auto disabled:opacity-40"
-                        >
-                          <ChevronRight size={15} /> Generate Outline
-                        </button>
                       </div>
+                      <button
+                        onClick={copilotGenerateOutline}
+                        disabled={chatMessages.length < 2}
+                        className="btn-neon px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 w-full justify-center disabled:opacity-40"
+                      >
+                        <ChevronRight size={15} /> Generate Outline
+                      </button>
+                      {chatMessages.length < 2 && (
+                        <p className="text-[10px] text-slate-600 text-center -mt-2">
+                          Send at least one message to unlock
+                        </p>
+                      )}
                     </div>
-                  )}
+                  </>
+                )}
 
-                  {copilotPhase === 'outline' && copilotOutline && (
-                    <div className="flex-1 overflow-auto p-5 space-y-4">
-                      <div className="space-y-2">
-                        <input
-                          value={copilotOutline.title}
-                          onChange={e => setCopilotOutline((prev: any) => ({ ...prev, title: e.target.value }))}
-                          className="w-full text-lg font-semibold text-slate-100 bg-transparent border-b border-cyan-precision/15 pb-2 outline-none focus:border-cyan-precision/40 transition-colors"
-                        />
-                        <input
-                          value={copilotOutline.subtitle || ''}
-                          onChange={e => setCopilotOutline((prev: any) => ({ ...prev, subtitle: e.target.value }))}
-                          placeholder="Subtitle (optional)"
-                          className="w-full text-sm text-slate-500 italic bg-transparent border-b border-ink-700 pb-1.5 outline-none focus:border-cyan-precision/30 transition-colors placeholder-slate-700"
-                        />
-                      </div>
+                {/* OUTLINE: outline left 50%, chat right 50% */}
+                {copilotPhase === 'outline' && (
+                  <>
+                    <div className="flex-1 flex flex-col overflow-hidden border-r border-cyan-precision/10">
+                      {copilotOutline ? (
+                        <div className="flex-1 overflow-auto p-5 space-y-4">
+                          <div className="space-y-2">
+                            <input
+                              value={copilotOutline.title}
+                              onChange={e => setCopilotOutline((prev: any) => ({ ...prev, title: e.target.value }))}
+                              className="w-full text-lg font-semibold text-slate-100 bg-transparent border-b border-cyan-precision/15 pb-2 outline-none focus:border-cyan-precision/40 transition-colors"
+                            />
+                            <input
+                              value={copilotOutline.subtitle || ''}
+                              onChange={e => setCopilotOutline((prev: any) => ({ ...prev, subtitle: e.target.value }))}
+                              placeholder="Subtitle (optional)"
+                              className="w-full text-sm text-slate-500 italic bg-transparent border-b border-ink-700 pb-1.5 outline-none focus:border-cyan-precision/30 transition-colors placeholder-slate-700"
+                            />
+                          </div>
 
-                      <div className="space-y-2.5">
-                        {copilotOutline.sections?.map((s: any, i: number) => (
-                          <div key={i} className="glass-card p-4 space-y-2.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] font-black text-cyan-precision/40 uppercase tracking-widest shrink-0 w-5">§{i+1}</span>
-                              <input
-                                value={s.heading}
-                                onChange={e => updateOutlineSection(i, 'heading', e.target.value)}
-                                className="flex-1 text-sm font-semibold text-slate-200 input-neon rounded-lg px-2.5 py-1.5"
-                              />
-                              <button onClick={() => removeOutlineSection(i)}
-                                className="p-1.5 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10">
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                            <div className="space-y-1.5 pl-7">
-                              {s.bullet_points?.map((b: string, j: number) => (
-                                <div key={j} className="flex items-center gap-1.5">
-                                  <span className="text-cyan-precision/30 text-xs">▸</span>
-                                  <input value={b} onChange={e => updateBulletPoint(i, j, e.target.value)}
-                                    className="flex-1 text-xs text-slate-400 input-neon rounded-lg px-2 py-1" />
-                                  <button onClick={() => removeBulletPoint(i, j)} className="text-slate-700 hover:text-red-400 transition-colors">
-                                    <Trash2 size={10} />
+                          <div className="space-y-2.5">
+                            {copilotOutline.sections?.map((s: any, i: number) => (
+                              <div key={i} className="glass-card p-4 space-y-2.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[9px] font-black text-cyan-precision/40 uppercase tracking-widest shrink-0 w-5">§{i+1}</span>
+                                  <input
+                                    value={s.heading}
+                                    onChange={e => updateOutlineSection(i, 'heading', e.target.value)}
+                                    className="flex-1 text-sm font-semibold text-slate-200 input-neon rounded-lg px-2.5 py-1.5"
+                                  />
+                                  <button onClick={() => removeOutlineSection(i)}
+                                    className="p-1.5 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10">
+                                    <Trash2 size={13} />
                                   </button>
                                 </div>
-                              ))}
-                              <button onClick={() => addBulletPoint(i)}
-                                className="text-[10px] text-slate-600 hover:text-cyan-precision flex items-center gap-1 mt-1 transition-colors">
-                                <Plus size={10} /> Add point
+                                <div className="space-y-1.5 pl-7">
+                                  {s.bullet_points?.map((b: string, j: number) => (
+                                    <div key={j} className="flex items-center gap-1.5">
+                                      <span className="text-cyan-precision/30 text-xs">▸</span>
+                                      <input value={b} onChange={e => updateBulletPoint(i, j, e.target.value)}
+                                        className="flex-1 text-xs text-slate-400 input-neon rounded-lg px-2 py-1" />
+                                      <button onClick={() => removeBulletPoint(i, j)} className="text-slate-700 hover:text-red-400 transition-colors">
+                                        <Trash2 size={10} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button onClick={() => addBulletPoint(i)}
+                                    className="text-[10px] text-slate-600 hover:text-cyan-precision flex items-center gap-1 mt-1 transition-colors">
+                                    <Plus size={10} /> Add point
+                                  </button>
+                                </div>
+                                <div className="flex items-center gap-1.5 pl-7">
+                                  <ImageIcon size={10} className="text-cyan-precision/40 shrink-0" />
+                                  <input value={s.image_suggestion || ''}
+                                    onChange={e => updateOutlineSection(i, 'image_suggestion', e.target.value)}
+                                    placeholder="Image prompt for this section..."
+                                    className="flex-1 text-[11px] text-cyan-precision/70 input-neon rounded-lg px-2 py-1 placeholder-slate-700" />
+                                </div>
+                              </div>
+                            ))}
+                            <button onClick={addOutlineSection}
+                              className="w-full py-2.5 rounded-xl border border-dashed border-cyan-precision/15 text-xs text-slate-600 hover:text-cyan-precision hover:border-cyan-precision/30 flex items-center justify-center gap-1.5 transition-all">
+                              <Plus size={12} /> Add Section
+                            </button>
+                          </div>
+
+                          <div className="glass-card p-3.5 space-y-2">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600 flex items-center gap-1.5">
+                              <Sparkles size={9} className="text-plasma/60" /> Refine with AI
+                            </p>
+                            <div className="flex gap-2">
+                              <input value={outlineRefineInput} onChange={e => setOutlineRefineInput(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && copilotRefineOutline()}
+                                placeholder="e.g. Make section 2 more technical..." disabled={outlineRefining}
+                                className="flex-1 input-neon rounded-xl px-3 py-2 text-sm text-slate-200" />
+                              <button onClick={copilotRefineOutline} disabled={outlineRefining || !outlineRefineInput.trim()}
+                                className="px-3 py-2 btn-neon rounded-xl disabled:opacity-40">
+                                {outlineRefining ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                               </button>
                             </div>
-                            <div className="flex items-center gap-1.5 pl-7">
-                              <ImageIcon size={10} className="text-cyan-precision/40 shrink-0" />
-                              <input value={s.image_suggestion || ''}
-                                onChange={e => updateOutlineSection(i, 'image_suggestion', e.target.value)}
-                                placeholder="Image prompt for this section..."
-                                className="flex-1 text-[11px] text-cyan-precision/70 input-neon rounded-lg px-2 py-1 placeholder-slate-700" />
-                            </div>
                           </div>
-                        ))}
-                        <button onClick={addOutlineSection}
-                          className="w-full py-2.5 rounded-xl border border-dashed border-cyan-precision/15 text-xs text-slate-600 hover:text-cyan-precision hover:border-cyan-precision/30 flex items-center justify-center gap-1.5 transition-all">
-                          <Plus size={12} /> Add Section
-                        </button>
-                      </div>
 
-                      <div className="glass-card p-3.5 space-y-2">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600 flex items-center gap-1.5">
-                          <Sparkles size={9} className="text-plasma/60" /> Refine with AI
-                        </p>
-                        <div className="flex gap-2">
-                          <input value={outlineRefineInput} onChange={e => setOutlineRefineInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && copilotRefineOutline()}
-                            placeholder="e.g. Make section 2 more technical..." disabled={outlineRefining}
-                            className="flex-1 input-neon rounded-xl px-3 py-2 text-sm text-slate-200" />
-                          <button onClick={copilotRefineOutline} disabled={outlineRefining || !outlineRefineInput.trim()}
-                            className="px-3 py-2 btn-neon rounded-xl disabled:opacity-40">
-                            {outlineRefining ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                          <button onClick={copilotDraftAll}
+                            className="btn-neon px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 w-full justify-center">
+                            <Sparkles size={15} /> Draft All Sections + Generate Images
                           </button>
                         </div>
-                      </div>
-
-                      <button onClick={copilotDraftAll}
-                        className="btn-neon px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 w-full justify-center">
-                        <Sparkles size={15} /> Draft All Sections + Generate Images
-                      </button>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <Loader2 size={28} className="animate-spin text-cyan-precision" />
+                            <p className="text-xs text-slate-500">Building your outline...</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {copilotPhase === 'outline' && !copilotOutline && (
-                    <div className="flex-1 flex items-center justify-center">
-                      <div className="flex flex-col items-center gap-3">
-                        <Loader2 size={28} className="animate-spin text-cyan-precision" />
-                        <p className="text-xs text-slate-500">Building your outline...</p>
-                      </div>
+                    {/* Chat on the right */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      <ChatPanel
+                        messages={chatMessages}
+                        onMessagesChange={setChatMessages}
+                        systemPrompt="You are a creative blog content strategist. Help the user brainstorm blog post ideas. Ask clarifying questions about their topic, audience, tone, and key points they want to cover. Be concise and helpful."
+                        placeholder="Refine your ideas..."
+                      />
                     </div>
-                  )}
+                  </>
+                )}
 
-                  {(copilotPhase === 'drafting' || copilotPhase === 'review') && (
+                {/* DRAFTING / REVIEW: editor left, images right */}
+                {(copilotPhase === 'drafting' || copilotPhase === 'review') && (
+                  <>
                     <div className="flex-1 flex flex-col overflow-hidden">
                       {copilotDrafting && (
                         <div className="px-4 py-2.5 border-b border-amber-500/15 flex items-center gap-2.5 text-xs text-amber-400 shrink-0"
@@ -692,49 +723,38 @@ export function BlogStudio() {
                         saveStatus={saveStatus}
                       />
                     </div>
-                  )}
-                </div>
-
-                {/* Right: Chat / Images */}
-                <div className="w-80 border-l border-cyan-precision/10 glass flex flex-col overflow-hidden">
-                  {(copilotPhase === 'brainstorm' || copilotPhase === 'outline') && (
-                    <ChatPanel
-                      messages={chatMessages}
-                      onMessagesChange={setChatMessages}
-                      systemPrompt="You are a creative blog content strategist. Help the user brainstorm blog post ideas. Ask clarifying questions about their topic, audience, tone, and key points they want to cover. Be concise and helpful."
-                      placeholder="Describe your blog idea..."
-                    />
-                  )}
-                  {(copilotPhase === 'review' || copilotPhase === 'drafting') && (
-                    <div className="flex-1 overflow-auto">
-                      <div className="p-4 space-y-3">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600 flex items-center gap-1.5">
-                          <ImageIcon size={10} className="text-cyan-precision/50" /> Generated Images ({images.length})
-                        </p>
-                        {copilotDrafting && images.length === 0 && (
-                          <div className="text-center py-10 space-y-3">
-                            <Loader2 size={18} className="animate-spin text-cyan-precision mx-auto" />
-                            <p className="text-xs text-slate-600">Images will appear as sections complete...</p>
-                          </div>
-                        )}
-                        {images.map(img => (
-                          <div key={img.id} className="space-y-1">
-                            <img src={`data:image/png;base64,${img.b64}`} alt={img.alt}
-                              className="w-full rounded-xl border border-cyan-precision/10" />
-                            <p className="text-[10px] text-slate-600 truncate">{img.alt}</p>
-                          </div>
-                        ))}
-                        {copilotPhase === 'review' && (
-                          <button onClick={() => setShowImageGen(true)}
-                            className="w-full text-xs py-2 rounded-xl border border-cyan-precision/12 text-slate-500 hover:text-cyan-precision hover:border-cyan-precision/25 flex items-center justify-center gap-1.5 transition-all">
-                            <Plus size={12} /> Add Image Manually
-                          </button>
-                        )}
-                        {showImageGen && <ImageGenerator blogId={projectId} onImageGenerated={handleImageGenerated} compact />}
+                    <div className="w-80 border-l border-cyan-precision/10 glass flex flex-col overflow-hidden shrink-0">
+                      <div className="flex-1 overflow-auto">
+                        <div className="p-4 space-y-3">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600 flex items-center gap-1.5">
+                            <ImageIcon size={10} className="text-cyan-precision/50" /> Generated Images ({images.length})
+                          </p>
+                          {copilotDrafting && images.length === 0 && (
+                            <div className="text-center py-10 space-y-3">
+                              <Loader2 size={18} className="animate-spin text-cyan-precision mx-auto" />
+                              <p className="text-xs text-slate-600">Images will appear as sections complete...</p>
+                            </div>
+                          )}
+                          {images.map(img => (
+                            <div key={img.id} className="space-y-1">
+                              <img src={`data:image/png;base64,${img.b64}`} alt={img.alt}
+                                className="w-full rounded-xl border border-cyan-precision/10" />
+                              <p className="text-[10px] text-slate-600 truncate">{img.alt}</p>
+                            </div>
+                          ))}
+                          {copilotPhase === 'review' && (
+                            <button onClick={() => setShowImageGen(true)}
+                              className="w-full text-xs py-2 rounded-xl border border-cyan-precision/12 text-slate-500 hover:text-cyan-precision hover:border-cyan-precision/25 flex items-center justify-center gap-1.5 transition-all">
+                              <Plus size={12} /> Add Image Manually
+                            </button>
+                          )}
+                          {showImageGen && <ImageGenerator blogId={projectId} onImageGenerated={handleImageGenerated} compact />}
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
+
               </div>
             </div>
           )}

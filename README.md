@@ -13,7 +13,11 @@ An AI-powered blog authoring workspace. Plan a content calendar, draft posts sec
 
 ## The three modes
 
-Blog Studio is built around a spectrum of authorial control. You choose how hands-on you want to be on a per-project basis.
+Blog Studio is built around a spectrum of authorial control. When you launch the app you're greeted by the mode picker — choose how hands-on you want to be, and switch anytime from the sidebar.
+
+![Home — Mode Picker](docs/screenshots/home-mode-picker.png)
+
+---
 
 ### Writer — you drive
 
