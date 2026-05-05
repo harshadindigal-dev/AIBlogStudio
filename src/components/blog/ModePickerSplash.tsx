@@ -1,4 +1,4 @@
-import { PenTool, Users, Zap, ArrowRight } from 'lucide-react';
+import { Rocket, Users, Zap, ArrowRight, PenTool } from 'lucide-react';
 import type { BlogMode } from '../../types';
 
 interface ModePickerSplashProps {
@@ -69,7 +69,7 @@ export function ModePickerSplash({ onSelect }: ModePickerSplashProps) {
         <div className="flex items-center justify-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center neon-breathe"
             style={{ background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.2)' }}>
-            <PenTool size={20} className="text-cyan-precision" />
+            <Rocket size={20} className="text-cyan-precision" />
           </div>
           <span className="gradient-text text-2xl font-black tracking-tight">AI Blog Studio</span>
         </div>

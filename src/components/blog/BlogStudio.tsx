@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
-  PenTool, Users, Zap, Download, Plus, Loader2,
+  Rocket, PenTool, Users, Zap, Download, Plus, Loader2,
   ChevronRight, Sparkles, LayoutGrid, ImageIcon,
   Send, Trash2, Check, MessageSquare, AlignLeft, FileText, Eye,
 } from 'lucide-react';
@@ -426,15 +426,19 @@ export function BlogStudio() {
         {/* ── Sidebar ────────────────────────────────────────────────────── */}
         <div className="w-60 border-r border-cyan-precision/10 glass flex flex-col shrink-0">
 
-          {/* Logo */}
+          {/* Logo — click to return to mode picker */}
           <div className="px-5 py-4 border-b border-cyan-precision/10">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center neon-breathe"
+            <button
+              onClick={() => setHasChosenMode(false)}
+              className="flex items-center gap-2.5 group w-full"
+              title="Back to home"
+            >
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center neon-breathe group-hover:scale-110 transition-transform"
                 style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)' }}>
-                <PenTool size={14} className="text-cyan-precision" />
+                <Rocket size={14} className="text-cyan-precision" />
               </div>
               <span className="gradient-text font-bold text-sm tracking-wide">AI Blog Studio</span>
-            </div>
+            </button>
           </div>
 
           {/* Mode picker */}
