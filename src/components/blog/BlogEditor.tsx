@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Bold, Italic, Heading1, Heading2, List, ImagePlus, Eye, EyeOff } from 'lucide-react';
+import { Bold, Italic, Heading1, Heading2, List, ImagePlus, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { cn } from '../../utils';
 
 interface BlogEditorProps {
@@ -9,6 +9,7 @@ interface BlogEditorProps {
   onTogglePreview: () => void;
   onInsertImage?: () => void;
   placeholder?: string;
+  saveStatus?: 'idle' | 'saving' | 'saved';
 }
 
 function miniMarkdownToHtml(md: string): string {
@@ -36,8 +37,12 @@ function miniMarkdownToHtml(md: string): string {
     }).join('\n');
 }
 
-export function BlogEditor({ value, onChange, showPreview, onTogglePreview, onInsertImage, placeholder }: BlogEditorProps) {
+export function BlogEditor({ value, onChange, showPreview, onTogglePreview, onInsertImage, placeholder, saveStatus }: BlogEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+  const charCount = value.length;
+  const readTime = Math.max(1, Math.ceil(wordCount / 200));
 
   const insertAt = (before: string, after: string = '') => {
     const ta = textareaRef.current;
@@ -100,10 +105,7 @@ export function BlogEditor({ value, onChange, showPreview, onTogglePreview, onIn
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder || 'Start writing your blog post in markdown...'}
             className="flex-1 text-slate-200 p-6 font-mono text-sm resize-none outline-none leading-relaxed placeholder-slate-700"
-            style={{
-              background: 'rgba(2,8,16,0.55)',
-              caretColor: '#00e5ff',
-            }}
+            style={{ background: 'rgba(2,8,16,0.55)', caretColor: '#00e5ff' }}
             spellCheck
           />
         ) : (
@@ -113,6 +115,37 @@ export function BlogEditor({ value, onChange, showPreview, onTogglePreview, onIn
             dangerouslySetInnerHTML={{ __html: miniMarkdownToHtml(value) }}
           />
         )}
+      </div>
+
+      {/* Stats bar */}
+      <div
+        className="flex items-center justify-between px-4 py-1.5 border-t border-cyan-precision/8 shrink-0"
+        style={{ background: 'rgba(2,8,16,0.6)' }}
+      >
+        <div className="flex items-center gap-3 font-mono text-[10px] text-slate-700">
+          <span>{wordCount.toLocaleString()} words</span>
+          <span className="text-slate-800">·</span>
+          <span>{charCount.toLocaleString()} chars</span>
+          {wordCount > 0 && (
+            <>
+              <span className="text-slate-800">·</span>
+              <span>~{readTime} min read</span>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 text-[10px]">
+          {saveStatus === 'saving' && (
+            <span className="flex items-center gap-1 text-cyan-precision/50">
+              <Loader2 size={9} className="animate-spin" /> Saving...
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="flex items-center gap-1 text-aurora/60">
+              <div className="w-1.5 h-1.5 rounded-full bg-aurora/60" /> Saved
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
