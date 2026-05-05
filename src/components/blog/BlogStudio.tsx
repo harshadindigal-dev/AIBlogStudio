@@ -15,15 +15,11 @@ import type { BlogMode, BlogImage, ChatMessage, PlanEntry, ContentPlan } from '.
 
 const API = 'http://localhost:8000';
 
-const modes: { id: BlogMode; label: string; desc: string; icon: any }[] = [
-  { id: 'writer',    label: 'Writer',    desc: 'You write, AI generates images inline', icon: PenTool },
-  { id: 'copilot',   label: 'Co-pilot',  desc: 'AI brainstorms, outlines & drafts with you', icon: Users },
-  { id: 'autopilot', label: 'Autopilot', desc: 'Fully automated content planning & generation', icon: Zap },
+const modes: { id: BlogMode; label: string; desc: string; icon: any; color: string }[] = [
+  { id: 'writer',    label: 'Writer',    desc: 'You write, AI generates images inline',        icon: PenTool, color: 'text-cyan-precision' },
+  { id: 'copilot',  label: 'Co-pilot',  desc: 'AI brainstorms, outlines & drafts with you',   icon: Users,   color: 'text-plasma' },
+  { id: 'autopilot',label: 'Autopilot', desc: 'Fully automated content planning & generation', icon: Zap,     color: 'text-aurora' },
 ];
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 export function BlogStudio() {
   const [mode, setMode] = useState<BlogMode>('writer');
@@ -32,7 +28,6 @@ export function BlogStudio() {
     () => localStorage.getItem('blog_project_id') || ''
   );
 
-  // ── Writer state ──────────────────────────────────────────────────────
   const [editorContent, setEditorContent] = useState<string>(
     () => localStorage.getItem('blog_editor_content') || ''
   );
@@ -42,12 +37,10 @@ export function BlogStudio() {
     () => { try { return JSON.parse(localStorage.getItem('blog_images') || '[]'); } catch { return []; } }
   );
 
-  // Persist to localStorage whenever these change
   useEffect(() => { localStorage.setItem('blog_editor_content', editorContent); }, [editorContent]);
   useEffect(() => { localStorage.setItem('blog_project_id', projectId); }, [projectId]);
   useEffect(() => { localStorage.setItem('blog_images', JSON.stringify(images)); }, [images]);
 
-  // ── Copilot state ─────────────────────────────────────────────────────
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [copilotPhase, setCopilotPhase] = useState<'brainstorm' | 'outline' | 'drafting' | 'review'>(
     () => (localStorage.getItem('blog_editor_content') ? 'review' : 'brainstorm')
@@ -59,7 +52,6 @@ export function BlogStudio() {
   const [outlineRefineInput, setOutlineRefineInput] = useState('');
   const [outlineRefining, setOutlineRefining] = useState(false);
 
-  // ── Autopilot state ───────────────────────────────────────────────────
   const [autoForm, setAutoForm] = useState({
     company_name: '', company_description: '', topics: '', audience: '',
     posts_per_week: 2, weeks: 4, image_provider: 'openai' as 'openai' | 'gemini',
@@ -67,8 +59,6 @@ export function BlogStudio() {
   const [autoPlan, setAutoPlan] = useState<ContentPlan | null>(null);
   const [autoLoading, setAutoLoading] = useState(false);
   const [generatingIdx, setGeneratingIdx] = useState<number | null>(null);
-
-  // ── Helpers ────────────────────────────────────────────────────────────
 
   const saveProject = useCallback(async (content: string, imgs: BlogImage[], pId?: string) => {
     const id = pId || projectId;
@@ -93,8 +83,6 @@ export function BlogStudio() {
     setShowImageGen(false);
   };
 
-  // ── Copilot: generate outline from chat context ────────────────────────
-
   const copilotGenerateOutline = async () => {
     const chatContext = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n');
     setCopilotPhase('outline');
@@ -110,8 +98,6 @@ export function BlogStudio() {
       setCopilotOutline(null);
     }
   };
-
-  // ── Copilot: outline editing helpers ────────────────────────────────────
 
   const updateOutlineSection = (idx: number, field: string, value: any) => {
     setCopilotOutline((prev: any) => {
@@ -184,13 +170,10 @@ export function BlogStudio() {
       setCopilotOutline(data.outline);
       setOutlineRefineInput('');
     } catch {
-      // keep existing outline on error
     } finally {
       setOutlineRefining(false);
     }
   };
-
-  // ── Copilot: draft all sections + auto-generate images ─────────────────
 
   const copilotDraftAll = async () => {
     if (!copilotOutline) return;
@@ -200,7 +183,6 @@ export function BlogStudio() {
     let fullContent = `# ${copilotOutline.title}\n\n`;
     if (copilotOutline.subtitle) fullContent += `*${copilotOutline.subtitle}*\n\n`;
 
-    // ── Phase 1: stream all section text, leaving image placeholders ──────
     for (let i = 0; i < copilotOutline.sections.length; i++) {
       setCopilotSectionIdx(i);
       const section = copilotOutline.sections[i];
@@ -239,7 +221,6 @@ export function BlogStudio() {
         }
       }
       fullContent += '\n\n';
-      // Drop a placeholder where this section's image will go (never on the last section)
       const isLastSection = i === copilotOutline.sections.length - 1;
       if (section.image_suggestion && !isLastSection) {
         fullContent += `![Generating image for ${section.heading}...](IMG_PLACEHOLDER_${i})\n\n`;
@@ -247,7 +228,6 @@ export function BlogStudio() {
       setEditorContent(fullContent);
     }
 
-    // ── Phase 2: generate all images in parallel ───────────────────────
     setCopilotImageIdx(0);
     const sectionsWithImages = copilotOutline.sections
       .map((s: any, i: number) => ({ section: s, idx: i }))
@@ -265,7 +245,6 @@ export function BlogStudio() {
       )
     );
 
-    // ── Phase 3: replace placeholders with real image URLs ─────────────
     const generatedImages: BlogImage[] = [];
     for (const result of imageResults) {
       if (result.status === 'fulfilled') {
@@ -283,7 +262,6 @@ export function BlogStudio() {
         );
       }
     }
-    // Clean up any remaining placeholders from failed images
     fullContent = fullContent.replace(/!\[[^\]]*\]\(IMG_PLACEHOLDER_\d+\)\n\n/g, '');
     setImages(generatedImages);
     setEditorContent(fullContent);
@@ -294,8 +272,6 @@ export function BlogStudio() {
     setShowPreview(true);
     saveProject(fullContent, generatedImages, pid);
   };
-
-  // ── Autopilot: plan + generate ─────────────────────────────────────────
 
   const autoGeneratePlan = async () => {
     setAutoLoading(true);
@@ -326,7 +302,6 @@ export function BlogStudio() {
         audience: autoForm.audience,
         image_provider: autoForm.image_provider,
       });
-      // Update entry status
       setAutoPlan(prev => {
         if (!prev) return prev;
         const updated = { ...prev, entries: [...prev.entries] };
@@ -354,97 +329,108 @@ export function BlogStudio() {
     }
   };
 
-  // ============================================================================
-  // RENDER
-  // ============================================================================
+  // ── Shared input/select class ────────────────────────────────────────────
+  const inputCls = 'w-full input-neon rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none';
+  const selectCls = 'w-full input-neon rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none';
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* ── Left Sidebar: Mode Picker ────────────────────────────────────── */}
-      <div className="w-56 border-r border-ink-650 bg-ink-900 flex flex-col shrink-0">
-        <div className="p-4 border-b border-ink-650">
-          <h2 className="font-bold text-slate-200 flex items-center gap-2 text-sm">
-            <PenTool size={16} className="text-cyan-precision" />
-            Blog Studio
-          </h2>
+
+      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      <div className="w-60 border-r border-cyan-precision/10 glass flex flex-col shrink-0">
+
+        {/* Logo */}
+        <div className="px-5 py-4 border-b border-cyan-precision/10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center neon-breathe"
+              style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.25)' }}>
+              <PenTool size={14} className="text-cyan-precision" />
+            </div>
+            <span className="gradient-text font-bold text-sm tracking-wide">AI Blog Studio</span>
+          </div>
         </div>
-        <div className="p-3 space-y-1">
+
+        {/* Mode picker */}
+        <div className="p-3 space-y-1.5 flex-1">
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600 px-2 mb-2">Mode</p>
           {modes.map(m => {
             const Icon = m.icon;
+            const active = mode === m.id;
             return (
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
                 className={cn(
-                  "w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center gap-2.5",
-                  mode === m.id
-                    ? "bg-cyan-precision/10 text-cyan-precision border border-cyan-precision/30"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-ink-800"
+                  'w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3',
+                  active ? 'active-neon' : 'hover-neon border border-transparent text-slate-500 hover:text-slate-300'
                 )}
               >
-                <Icon size={16} />
+                <div className={cn(
+                  'w-6 h-6 rounded-md flex items-center justify-center shrink-0',
+                  active ? 'bg-cyan-precision/15' : 'bg-ink-700'
+                )}>
+                  <Icon size={13} className={active ? 'text-cyan-precision' : m.color + ' opacity-60'} />
+                </div>
                 <div>
-                  <p className="text-sm font-medium">{m.label}</p>
-                  <p className="text-[10px] opacity-60">{m.desc}</p>
+                  <p className={cn('text-xs font-semibold', active ? 'text-cyan-precision' : 'text-slate-400')}>{m.label}</p>
+                  <p className="text-[9px] text-slate-600 mt-0.5 leading-tight">{m.desc}</p>
                 </div>
               </button>
             );
           })}
         </div>
 
-        {/* Image gallery (Writer + Copilot modes) */}
+        {/* Image gallery */}
         {(mode === 'writer' || mode === 'copilot') && images.length > 0 && (
-          <div className="mt-auto border-t border-ink-650 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1">
-              <ImageIcon size={12} /> Generated Images ({images.length})
+          <div className="border-t border-cyan-precision/8 p-3">
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-600 mb-2 flex items-center gap-1.5">
+              <ImageIcon size={10} className="text-cyan-precision/50" />
+              Images ({images.length})
             </p>
-            <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-auto">
+            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-auto">
               {images.map(img => (
-                <img key={img.id} src={`data:image/png;base64,${img.b64}`} alt={img.alt} className="w-full rounded border border-ink-650" />
+                <img key={img.id} src={`data:image/png;base64,${img.b64}`} alt={img.alt}
+                  className="w-full rounded-lg border border-cyan-precision/10 opacity-80 hover:opacity-100 transition-opacity" />
               ))}
             </div>
           </div>
         )}
 
-        {/* Export + Save */}
+        {/* Action buttons */}
         {(mode === 'writer' || mode === 'copilot') && (
-          <div className="p-3 border-t border-ink-650 space-y-2">
+          <div className="p-3 border-t border-cyan-precision/8 space-y-2">
             <button
               onClick={() => {
                 localStorage.removeItem('blog_editor_content');
                 localStorage.removeItem('blog_project_id');
                 localStorage.removeItem('blog_images');
-                setEditorContent('');
-                setProjectId('');
-                setImages([]);
-                setShowPreview(false);
-                setCopilotPhase('brainstorm');
-                setChatMessages([]);
-                setCopilotOutline(null);
+                setEditorContent(''); setProjectId(''); setImages([]); setShowPreview(false);
+                setCopilotPhase('brainstorm'); setChatMessages([]); setCopilotOutline(null);
               }}
-              className="w-full text-xs font-medium py-2 bg-ink-800 text-slate-400 border border-ink-650 rounded-lg hover:bg-ink-700 transition-colors"
+              className="w-full btn-ghost rounded-xl text-xs font-medium py-2"
             >
               New Post
             </button>
             <button
               onClick={async () => { const pid = await ensureProject(); saveProject(editorContent, images, pid); }}
-              className="w-full text-xs font-medium py-2 bg-ink-800 text-slate-300 border border-ink-650 rounded-lg hover:bg-ink-700 transition-colors"
+              className="w-full btn-ghost rounded-xl text-xs font-medium py-2 text-slate-300 border-cyan-precision/12 hover:border-cyan-precision/24"
             >
               Save Draft
             </button>
             <button
               onClick={async () => { const pid = await ensureProject(); await saveProject(editorContent, images, pid); setShowExport(true); }}
               disabled={!editorContent.trim()}
-              className="w-full text-xs font-medium py-2 bg-cyan-precision/10 text-cyan-precision border border-cyan-precision/30 rounded-lg hover:bg-cyan-precision/20 disabled:opacity-40 transition-colors flex items-center justify-center gap-1"
+              className="w-full btn-neon rounded-xl text-xs py-2 flex items-center justify-center gap-1.5 disabled:opacity-40"
             >
-              <Download size={14} /> Export
+              <Download size={13} /> Export
             </button>
           </div>
         )}
       </div>
 
-      {/* ── Main Content Area ─────────────────────────────────────────────── */}
+      {/* ── Main area ────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
+
         {/* MODE 1: Writer */}
         {mode === 'writer' && (
           <div className="flex-1 flex overflow-hidden">
@@ -458,7 +444,7 @@ export function BlogStudio() {
               />
             </div>
             {showImageGen && (
-              <div className="w-80 border-l border-ink-650 bg-ink-900 overflow-auto">
+              <div className="w-80 border-l border-cyan-precision/10 glass overflow-auto">
                 <ImageGenerator blogId={projectId} onImageGenerated={handleImageGenerated} />
               </div>
             )}
@@ -468,147 +454,155 @@ export function BlogStudio() {
         {/* MODE 2: Copilot */}
         {mode === 'copilot' && (
           <div className="flex-1 flex overflow-hidden">
-            {/* Left: Editor */}
             <div className="flex-1 flex flex-col overflow-hidden">
+
+              {/* Brainstorm phase */}
               {copilotPhase === 'brainstorm' && (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center space-y-4 max-w-md">
-                    <Sparkles size={40} className="text-cyan-precision mx-auto" />
-                    <h3 className="text-lg font-semibold text-slate-200">Brainstorm with AI</h3>
-                    <p className="text-sm text-slate-400">
-                      Use the chat panel on the right to discuss your blog topic.
-                      When you're ready, click "Generate Outline" below.
-                    </p>
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center space-y-5 max-w-sm">
+                    <div className="relative mx-auto w-16 h-16">
+                      <div className="absolute inset-0 rounded-2xl neon-breathe"
+                        style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)' }} />
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <Sparkles size={28} className="text-plasma" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold gradient-text-warm">Brainstorm with AI</h3>
+                      <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                        Chat with the AI on the right to explore your topic. When ready, generate your structured outline.
+                      </p>
+                    </div>
                     <button
                       onClick={copilotGenerateOutline}
                       disabled={chatMessages.length < 2}
-                      className="px-6 py-2 bg-cyan-precision hover:bg-cyan-200 disabled:bg-ink-700 disabled:text-slate-500 text-ink-950 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 mx-auto"
+                      className="btn-neon px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 mx-auto disabled:opacity-40"
                     >
-                      <ChevronRight size={16} /> Generate Outline
+                      <ChevronRight size={15} /> Generate Outline
                     </button>
                   </div>
                 </div>
               )}
 
+              {/* Outline phase */}
               {copilotPhase === 'outline' && copilotOutline && (
-                <div className="flex-1 overflow-auto p-6 space-y-4">
-                  {/* Editable title & subtitle */}
-                  <input
-                    value={copilotOutline.title}
-                    onChange={e => setCopilotOutline((prev: any) => ({ ...prev, title: e.target.value }))}
-                    className="w-full text-lg font-semibold text-slate-200 bg-transparent border-b border-ink-650 pb-1 outline-none focus:border-cyan-precision/50"
-                  />
-                  <input
-                    value={copilotOutline.subtitle || ''}
-                    onChange={e => setCopilotOutline((prev: any) => ({ ...prev, subtitle: e.target.value }))}
-                    placeholder="Subtitle (optional)"
-                    className="w-full text-sm text-slate-400 italic bg-transparent border-b border-ink-650 pb-1 outline-none focus:border-cyan-precision/50"
-                  />
+                <div className="flex-1 overflow-auto p-5 space-y-4">
+                  <div className="space-y-2">
+                    <input
+                      value={copilotOutline.title}
+                      onChange={e => setCopilotOutline((prev: any) => ({ ...prev, title: e.target.value }))}
+                      className="w-full text-lg font-semibold text-slate-100 bg-transparent border-b border-cyan-precision/15 pb-2 outline-none focus:border-cyan-precision/40 transition-colors"
+                    />
+                    <input
+                      value={copilotOutline.subtitle || ''}
+                      onChange={e => setCopilotOutline((prev: any) => ({ ...prev, subtitle: e.target.value }))}
+                      placeholder="Subtitle (optional)"
+                      className="w-full text-sm text-slate-500 italic bg-transparent border-b border-ink-700 pb-1.5 outline-none focus:border-cyan-precision/30 transition-colors placeholder-slate-700"
+                    />
+                  </div>
 
-                  {/* Editable sections */}
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {copilotOutline.sections?.map((s: any, i: number) => (
-                      <div key={i} className="border border-ink-650 rounded-lg p-4 bg-ink-850 space-y-2">
+                      <div key={i} className="glass-card p-4 space-y-2.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0">§{i + 1}</span>
+                          <span className="text-[9px] font-black text-cyan-precision/40 uppercase tracking-widest shrink-0 w-5">§{i+1}</span>
                           <input
                             value={s.heading}
                             onChange={e => updateOutlineSection(i, 'heading', e.target.value)}
-                            className="flex-1 text-sm font-semibold text-slate-200 bg-ink-900 border border-ink-650 rounded px-2 py-1 outline-none focus:border-cyan-precision/50"
+                            className="flex-1 text-sm font-semibold text-slate-200 input-neon rounded-lg px-2.5 py-1.5"
                           />
-                          <button
-                            onClick={() => removeOutlineSection(i)}
-                            className="p-1 text-slate-500 hover:text-red-400 transition-colors"
-                            title="Remove section"
-                          >
-                            <Trash2 size={14} />
+                          <button onClick={() => removeOutlineSection(i)}
+                            className="p-1.5 text-slate-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10">
+                            <Trash2 size={13} />
                           </button>
                         </div>
 
-                        {/* Editable bullet points */}
-                        <div className="space-y-1 pl-4">
+                        <div className="space-y-1.5 pl-7">
                           {s.bullet_points?.map((b: string, j: number) => (
                             <div key={j} className="flex items-center gap-1.5">
-                              <span className="text-slate-600 text-xs">•</span>
+                              <span className="text-cyan-precision/30 text-xs">▸</span>
                               <input
                                 value={b}
                                 onChange={e => updateBulletPoint(i, j, e.target.value)}
-                                className="flex-1 text-xs text-slate-400 bg-ink-900 border border-ink-650 rounded px-2 py-0.5 outline-none focus:border-cyan-precision/50"
+                                className="flex-1 text-xs text-slate-400 input-neon rounded-lg px-2 py-1"
                               />
-                              <button onClick={() => removeBulletPoint(i, j)} className="text-slate-600 hover:text-red-400 transition-colors">
+                              <button onClick={() => removeBulletPoint(i, j)}
+                                className="text-slate-700 hover:text-red-400 transition-colors">
                                 <Trash2 size={10} />
                               </button>
                             </div>
                           ))}
-                          <button
-                            onClick={() => addBulletPoint(i)}
-                            className="text-[10px] text-slate-500 hover:text-cyan-precision flex items-center gap-1 mt-1 transition-colors"
-                          >
+                          <button onClick={() => addBulletPoint(i)}
+                            className="text-[10px] text-slate-600 hover:text-cyan-precision flex items-center gap-1 mt-1 transition-colors">
                             <Plus size={10} /> Add point
                           </button>
                         </div>
 
-                        {/* Editable image suggestion */}
-                        <div className="flex items-center gap-1.5 pl-4">
-                          <ImageIcon size={10} className="text-cyan-precision/60 shrink-0" />
+                        <div className="flex items-center gap-1.5 pl-7">
+                          <ImageIcon size={10} className="text-cyan-precision/40 shrink-0" />
                           <input
                             value={s.image_suggestion || ''}
                             onChange={e => updateOutlineSection(i, 'image_suggestion', e.target.value)}
-                            placeholder="Image suggestion for this section..."
-                            className="flex-1 text-[11px] text-cyan-precision/80 bg-ink-900 border border-ink-650 rounded px-2 py-0.5 outline-none focus:border-cyan-precision/50 placeholder-slate-600"
+                            placeholder="Image prompt for this section..."
+                            className="flex-1 text-[11px] text-cyan-precision/70 input-neon rounded-lg px-2 py-1 placeholder-slate-700"
                           />
                         </div>
                       </div>
                     ))}
 
-                    <button
-                      onClick={addOutlineSection}
-                      className="w-full py-2 border border-dashed border-ink-650 rounded-lg text-xs text-slate-500 hover:text-cyan-precision hover:border-cyan-precision/30 flex items-center justify-center gap-1 transition-colors"
-                    >
+                    <button onClick={addOutlineSection}
+                      className="w-full py-2.5 rounded-xl border border-dashed border-cyan-precision/15 text-xs text-slate-600 hover:text-cyan-precision hover:border-cyan-precision/30 flex items-center justify-center gap-1.5 transition-all hover:bg-cyan-precision/3">
                       <Plus size={12} /> Add Section
                     </button>
                   </div>
 
-                  {/* AI refinement input */}
-                  <div className="border border-ink-650 rounded-lg p-3 bg-ink-900 space-y-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                      <Sparkles size={10} /> Refine with AI
+                  {/* AI refinement */}
+                  <div className="glass-card p-3.5 space-y-2">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600 flex items-center gap-1.5">
+                      <Sparkles size={9} className="text-plasma/60" /> Refine with AI
                     </p>
                     <div className="flex gap-2">
                       <input
                         value={outlineRefineInput}
                         onChange={e => setOutlineRefineInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && copilotRefineOutline()}
-                        placeholder="e.g. Make section 2 more technical, add a section about pricing..."
+                        placeholder="e.g. Make section 2 more technical..."
                         disabled={outlineRefining}
-                        className="flex-1 bg-ink-950 border border-ink-650 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-cyan-precision/50"
+                        className="flex-1 input-neon rounded-xl px-3 py-2 text-sm text-slate-200"
                       />
-                      <button
-                        onClick={copilotRefineOutline}
+                      <button onClick={copilotRefineOutline}
                         disabled={outlineRefining || !outlineRefineInput.trim()}
-                        className="px-3 py-2 bg-cyan-precision hover:bg-cyan-200 disabled:bg-ink-700 disabled:text-slate-500 text-ink-950 rounded-lg transition-colors"
-                      >
-                        {outlineRefining ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                        className="px-3 py-2 btn-neon rounded-xl disabled:opacity-40">
+                        {outlineRefining ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                       </button>
                     </div>
                   </div>
 
-                  <button
-                    onClick={copilotDraftAll}
-                    className="px-6 py-2 bg-cyan-precision hover:bg-cyan-200 text-ink-950 rounded-lg font-bold text-sm transition-colors flex items-center gap-2"
-                  >
-                    <ChevronRight size={16} /> Draft All Sections + Generate Images
+                  <button onClick={copilotDraftAll}
+                    className="btn-neon px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 w-full justify-center">
+                    <Sparkles size={15} /> Draft All Sections + Generate Images
                   </button>
                 </div>
               )}
 
+              {copilotPhase === 'outline' && !copilotOutline && (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 size={28} className="animate-spin text-cyan-precision" />
+                    <p className="text-xs text-slate-500">Building your outline...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Drafting / Review phase */}
               {(copilotPhase === 'drafting' || copilotPhase === 'review') && (
                 <div className="flex-1 flex flex-col overflow-hidden">
                   {copilotDrafting && (
-                    <div className="px-4 py-2 bg-amber-950/30 border-b border-amber-800/30 flex items-center gap-2 text-xs text-amber-400 shrink-0">
-                      <Loader2 size={14} className="animate-spin" />
+                    <div className="px-4 py-2.5 border-b border-amber-500/15 flex items-center gap-2.5 text-xs text-amber-400 shrink-0"
+                      style={{ background: 'rgba(245,158,11,0.05)' }}>
+                      <Loader2 size={13} className="animate-spin" />
                       {copilotImageIdx !== null ? (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1.5">
                           <ImageIcon size={12} /> Generating all images in parallel...
                         </span>
                       ) : (
@@ -617,9 +611,10 @@ export function BlogStudio() {
                     </div>
                   )}
                   {copilotPhase === 'review' && (
-                    <div className="px-4 py-2 bg-emerald-950/30 border-b border-emerald-800/30 flex items-center gap-2 text-xs text-emerald-400 shrink-0">
-                      <Check size={14} />
-                      Blog post complete with {images.length} generated image{images.length !== 1 ? 's' : ''}. Review and edit below.
+                    <div className="px-4 py-2.5 border-b border-aurora/15 flex items-center gap-2.5 text-xs text-aurora shrink-0"
+                      style={{ background: 'rgba(16,185,129,0.05)' }}>
+                      <Check size={13} />
+                      Complete — {images.length} image{images.length !== 1 ? 's' : ''} generated. Review and edit below.
                     </div>
                   )}
                   <BlogEditor
@@ -631,16 +626,10 @@ export function BlogStudio() {
                   />
                 </div>
               )}
-
-              {copilotPhase === 'outline' && !copilotOutline && (
-                <div className="flex-1 flex items-center justify-center">
-                  <Loader2 size={24} className="animate-spin text-cyan-precision" />
-                </div>
-              )}
             </div>
 
-            {/* Right: Chat / Image gen */}
-            <div className="w-80 border-l border-ink-650 bg-ink-900 flex flex-col overflow-hidden">
+            {/* Right panel: Chat / Images */}
+            <div className="w-80 border-l border-cyan-precision/10 glass flex flex-col overflow-hidden">
               {(copilotPhase === 'brainstorm' || copilotPhase === 'outline') && (
                 <ChatPanel
                   messages={chatMessages}
@@ -652,26 +641,26 @@ export function BlogStudio() {
               {(copilotPhase === 'review' || copilotPhase === 'drafting') && (
                 <div className="flex-1 overflow-auto">
                   <div className="p-4 space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                      <ImageIcon size={12} /> Generated Images ({images.length})
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600 flex items-center gap-1.5">
+                      <ImageIcon size={10} className="text-cyan-precision/50" />
+                      Generated Images ({images.length})
                     </p>
                     {copilotDrafting && images.length === 0 && (
-                      <div className="text-center py-8 space-y-2">
-                        <Loader2 size={20} className="animate-spin text-cyan-precision mx-auto" />
-                        <p className="text-xs text-slate-500">Images will appear here as sections are drafted...</p>
+                      <div className="text-center py-10 space-y-3">
+                        <Loader2 size={18} className="animate-spin text-cyan-precision mx-auto" />
+                        <p className="text-xs text-slate-600">Images will appear as sections complete...</p>
                       </div>
                     )}
                     {images.map(img => (
                       <div key={img.id} className="space-y-1">
-                        <img src={`data:image/png;base64,${img.b64}`} alt={img.alt} className="w-full rounded-lg border border-ink-650" />
-                        <p className="text-[10px] text-slate-500 truncate">{img.alt}</p>
+                        <img src={`data:image/png;base64,${img.b64}`} alt={img.alt}
+                          className="w-full rounded-xl border border-cyan-precision/10" />
+                        <p className="text-[10px] text-slate-600 truncate">{img.alt}</p>
                       </div>
                     ))}
                     {copilotPhase === 'review' && (
-                      <button
-                        onClick={() => setShowImageGen(true)}
-                        className="w-full text-xs py-2 border border-ink-650 text-slate-400 rounded-lg hover:bg-ink-800 flex items-center justify-center gap-1"
-                      >
+                      <button onClick={() => setShowImageGen(true)}
+                        className="w-full text-xs py-2 rounded-xl border border-cyan-precision/12 text-slate-500 hover:text-cyan-precision hover:border-cyan-precision/25 flex items-center justify-center gap-1.5 transition-all">
                         <Plus size={12} /> Add Image Manually
                       </button>
                     )}
@@ -689,99 +678,110 @@ export function BlogStudio() {
         {mode === 'autopilot' && (
           <div className="flex-1 overflow-auto p-6">
             {!autoPlan ? (
-              /* Onboarding form */
-              <div className="max-w-2xl mx-auto space-y-6">
-                <div className="text-center space-y-2 mb-8">
-                  <Zap size={36} className="text-cyan-precision mx-auto" />
-                  <h3 className="text-xl font-bold text-slate-200">Autopilot Blog Generator</h3>
-                  <p className="text-sm text-slate-400">Fill in your company details and we'll generate a full content calendar with polished blog posts.</p>
+              <div className="max-w-2xl mx-auto space-y-5">
+                {/* Header */}
+                <div className="text-center space-y-3 mb-8">
+                  <div className="relative mx-auto w-16 h-16">
+                    <div className="absolute inset-0 rounded-2xl neon-breathe"
+                      style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }} />
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <Zap size={28} className="text-aurora" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold gradient-text">Autopilot Blog Generator</h3>
+                  <p className="text-sm text-slate-500 max-w-sm mx-auto">Fill in your company details and we'll generate a full content calendar with polished blog posts.</p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Company Name</label>
-                    <input type="text" value={autoForm.company_name} onChange={e => setAutoForm(p => ({ ...p, company_name: e.target.value }))}
-                      className="w-full bg-ink-950 border border-ink-650 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-cyan-precision/50" placeholder="Acme Corp" />
+                {/* Form */}
+                <div className="glass-card p-5 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">Company Name</label>
+                      <input type="text" value={autoForm.company_name}
+                        onChange={e => setAutoForm(p => ({ ...p, company_name: e.target.value }))}
+                        className={inputCls} placeholder="Acme Corp" />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">Target Audience</label>
+                      <input type="text" value={autoForm.audience}
+                        onChange={e => setAutoForm(p => ({ ...p, audience: e.target.value }))}
+                        className={inputCls} placeholder="CTOs, tech leads, startup founders" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Target Audience</label>
-                    <input type="text" value={autoForm.audience} onChange={e => setAutoForm(p => ({ ...p, audience: e.target.value }))}
-                      className="w-full bg-ink-950 border border-ink-650 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-cyan-precision/50" placeholder="CTOs, tech leads, startup founders" />
-                  </div>
-                </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Company Description</label>
-                  <textarea value={autoForm.company_description} onChange={e => setAutoForm(p => ({ ...p, company_description: e.target.value }))} rows={3}
-                    className="w-full bg-ink-950 border border-ink-650 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-cyan-precision/50 resize-none" placeholder="We build developer tools that..." />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Blog Topics (comma-separated)</label>
-                  <input type="text" value={autoForm.topics} onChange={e => setAutoForm(p => ({ ...p, topics: e.target.value }))}
-                    className="w-full bg-ink-950 border border-ink-650 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-cyan-precision/50" placeholder="AI, developer experience, productivity, open source" />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-3">
                   <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Posts / Week</label>
-                    <select value={autoForm.posts_per_week} onChange={e => setAutoForm(p => ({ ...p, posts_per_week: +e.target.value }))}
-                      className="w-full bg-ink-950 border border-ink-650 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none">
-                      {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">Company Description</label>
+                    <textarea value={autoForm.company_description}
+                      onChange={e => setAutoForm(p => ({ ...p, company_description: e.target.value }))} rows={3}
+                      className={cn(inputCls, 'resize-none')} placeholder="We build developer tools that..." />
                   </div>
+
                   <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Weeks</label>
-                    <select value={autoForm.weeks} onChange={e => setAutoForm(p => ({ ...p, weeks: +e.target.value }))}
-                      className="w-full bg-ink-950 border border-ink-650 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none">
-                      {[1,2,3,4,6,8].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
+                    <label className="text-[9px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">Blog Topics (comma-separated)</label>
+                    <input type="text" value={autoForm.topics}
+                      onChange={e => setAutoForm(p => ({ ...p, topics: e.target.value }))}
+                      className={inputCls} placeholder="AI, developer experience, productivity, open source" />
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Image Provider</label>
-                    <select value={autoForm.image_provider} onChange={e => setAutoForm(p => ({ ...p, image_provider: e.target.value as any }))}
-                      className="w-full bg-ink-950 border border-ink-650 rounded-lg px-3 py-2.5 text-sm text-slate-200 outline-none">
-                      <option value="openai">OpenAI</option>
-                      <option value="gemini">Gemini</option>
-                    </select>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">Posts / Week</label>
+                      <select value={autoForm.posts_per_week}
+                        onChange={e => setAutoForm(p => ({ ...p, posts_per_week: +e.target.value }))}
+                        className={selectCls}>
+                        {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">Weeks</label>
+                      <select value={autoForm.weeks}
+                        onChange={e => setAutoForm(p => ({ ...p, weeks: +e.target.value }))}
+                        className={selectCls}>
+                        {[1,2,3,4,6,8].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-600 mb-1.5 block">Image Provider</label>
+                      <select value={autoForm.image_provider}
+                        onChange={e => setAutoForm(p => ({ ...p, image_provider: e.target.value as any }))}
+                        className={selectCls}>
+                        <option value="openai">OpenAI</option>
+                        <option value="gemini">Gemini</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
                 <button
                   onClick={autoGeneratePlan}
                   disabled={autoLoading || !autoForm.company_name.trim() || !autoForm.topics.trim()}
-                  className="w-full flex items-center justify-center gap-2 bg-cyan-precision hover:bg-cyan-200 disabled:bg-ink-700 disabled:text-slate-500 text-ink-950 px-6 py-3 rounded-lg font-bold text-sm transition-colors"
+                  className="w-full btn-neon flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-sm disabled:opacity-40"
                 >
                   {autoLoading ? <Loader2 size={16} className="animate-spin" /> : <LayoutGrid size={16} />}
                   {autoLoading ? 'Generating Plan...' : 'Generate Content Plan'}
                 </button>
               </div>
             ) : (
-              /* Content Calendar */
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-                    <LayoutGrid size={20} className="text-cyan-precision" />
-                    Content Calendar — {autoPlan.company_name}
-                  </h3>
+                  <div>
+                    <h3 className="text-lg font-bold gradient-text flex items-center gap-2">
+                      <LayoutGrid size={18} /> Content Calendar
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-0.5">{autoPlan.company_name}</p>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={autoGenerateAll}
-                      disabled={generatingIdx !== null}
-                      className="px-4 py-2 bg-cyan-precision hover:bg-cyan-200 disabled:bg-ink-700 disabled:text-slate-500 text-ink-950 rounded-lg font-bold text-xs transition-colors flex items-center gap-1"
-                    >
-                      {generatingIdx !== null ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                    <button onClick={autoGenerateAll} disabled={generatingIdx !== null}
+                      className="px-4 py-2 btn-neon rounded-xl text-xs flex items-center gap-1.5 disabled:opacity-40">
+                      {generatingIdx !== null ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
                       Generate All
                     </button>
-                    <button
-                      onClick={() => setAutoPlan(null)}
-                      className="px-4 py-2 text-xs font-medium text-slate-400 border border-ink-650 rounded-lg hover:bg-ink-800"
-                    >
+                    <button onClick={() => setAutoPlan(null)}
+                      className="px-4 py-2 text-xs btn-ghost rounded-xl">
                       New Plan
                     </button>
                   </div>
                 </div>
-
                 <ContentCalendar
                   entries={autoPlan.entries}
                   weeks={autoPlan.weeks}
@@ -800,7 +800,6 @@ export function BlogStudio() {
         )}
       </div>
 
-      {/* Export Dialog */}
       {showExport && projectId && (
         <ExportDialog projectId={projectId} onClose={() => setShowExport(false)} />
       )}

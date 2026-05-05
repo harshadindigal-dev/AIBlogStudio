@@ -11,7 +11,6 @@ interface BlogEditorProps {
   placeholder?: string;
 }
 
-/** Very small markdown→HTML for live preview (no external dep). */
 function miniMarkdownToHtml(md: string): string {
   return md
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -20,8 +19,8 @@ function miniMarkdownToHtml(md: string): string {
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="display:block;margin:1rem 0"><img src="$2" alt="$1" style="width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.12)"/></a>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="display:block;margin:1.5rem 0"><img src="$2" alt="$1" style="width:100%;height:auto;display:block;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.18)"/></a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#00e5ff;text-decoration:underline">$1</a>')
     .replace(/^- (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
     .replace(/\n{2,}/g, '</p><p>')
@@ -55,25 +54,39 @@ export function BlogEditor({ value, onChange, showPreview, onTogglePreview, onIn
     }, 0);
   };
 
+  const toolbarBtn = 'p-1.5 rounded-lg text-slate-500 hover:text-cyan-precision hover:bg-cyan-precision/8 transition-all';
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-ink-650 bg-ink-900 shrink-0">
-        <button onClick={() => insertAt('# ')} className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-ink-700 rounded" title="Heading 1"><Heading1 size={16} /></button>
-        <button onClick={() => insertAt('## ')} className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-ink-700 rounded" title="Heading 2"><Heading2 size={16} /></button>
-        <div className="w-px h-4 bg-ink-650 mx-1" />
-        <button onClick={() => insertAt('**', '**')} className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-ink-700 rounded" title="Bold"><Bold size={16} /></button>
-        <button onClick={() => insertAt('*', '*')} className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-ink-700 rounded" title="Italic"><Italic size={16} /></button>
-        <button onClick={() => insertAt('- ')} className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-ink-700 rounded" title="List"><List size={16} /></button>
-        <div className="w-px h-4 bg-ink-650 mx-1" />
+      <div className="flex items-center gap-0.5 px-3 py-2 border-b border-cyan-precision/10 glass shrink-0">
+        <button onClick={() => insertAt('# ')} className={toolbarBtn} title="Heading 1"><Heading1 size={15} /></button>
+        <button onClick={() => insertAt('## ')} className={toolbarBtn} title="Heading 2"><Heading2 size={15} /></button>
+        <div className="w-px h-4 mx-1.5" style={{ background: 'rgba(0,229,255,0.1)' }} />
+        <button onClick={() => insertAt('**', '**')} className={toolbarBtn} title="Bold"><Bold size={15} /></button>
+        <button onClick={() => insertAt('*', '*')} className={toolbarBtn} title="Italic"><Italic size={15} /></button>
+        <button onClick={() => insertAt('- ')} className={toolbarBtn} title="List"><List size={15} /></button>
+        <div className="w-px h-4 mx-1.5" style={{ background: 'rgba(0,229,255,0.1)' }} />
         {onInsertImage && (
-          <button onClick={onInsertImage} className="p-1.5 text-cyan-precision hover:bg-ink-700 rounded flex items-center gap-1 text-xs font-medium" title="Insert Image">
-            <ImagePlus size={16} /> Image
+          <button
+            onClick={onInsertImage}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-cyan-precision hover:bg-cyan-precision/10 transition-all border border-cyan-precision/20 hover:border-cyan-precision/40"
+            title="Insert Image"
+          >
+            <ImagePlus size={13} /> Image
           </button>
         )}
         <div className="flex-1" />
-        <button onClick={onTogglePreview} className={cn("p-1.5 rounded flex items-center gap-1 text-xs font-medium", showPreview ? "text-cyan-precision bg-ink-700" : "text-slate-400 hover:text-slate-200 hover:bg-ink-700")} title="Toggle preview">
-          {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
+        <button
+          onClick={onTogglePreview}
+          className={cn(
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all',
+            showPreview
+              ? 'text-cyan-precision bg-cyan-precision/10 border border-cyan-precision/30'
+              : 'text-slate-500 hover:text-slate-300 border border-transparent hover:border-cyan-precision/15'
+          )}
+        >
+          {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
           {showPreview ? 'Edit' : 'Preview'}
         </button>
       </div>
@@ -86,13 +99,17 @@ export function BlogEditor({ value, onChange, showPreview, onTogglePreview, onIn
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder || 'Start writing your blog post in markdown...'}
-            className="flex-1 bg-ink-950 text-slate-200 p-4 font-mono text-sm resize-none outline-none placeholder-slate-600 leading-relaxed"
+            className="flex-1 text-slate-200 p-6 font-mono text-sm resize-none outline-none leading-relaxed placeholder-slate-700"
+            style={{
+              background: 'rgba(2,8,16,0.55)',
+              caretColor: '#00e5ff',
+            }}
             spellCheck
           />
         ) : (
           <div
-            className="flex-1 overflow-auto p-6 bg-white text-gray-900 prose prose-lg max-w-none"
-            style={{ fontFamily: 'Georgia, serif', lineHeight: 1.8 }}
+            className="flex-1 overflow-auto p-8 bg-white text-gray-900 prose prose-lg max-w-none"
+            style={{ fontFamily: 'Georgia, serif', lineHeight: 1.85 }}
             dangerouslySetInnerHTML={{ __html: miniMarkdownToHtml(value) }}
           />
         )}
