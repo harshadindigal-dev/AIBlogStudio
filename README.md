@@ -47,45 +47,41 @@ Give Autopilot a company name, target audience, description, topic list, and a p
 
 A dedicated hosted platform is in development. The open-source version you're running today will remain free; the features below will be available to paid members on the website.
 
-### Pillar 1 — Company Knowledge Base
+### Pillar 1 — Company Knowledge Base *(The PageIndex Engine)*
 
-Upload your company's source material once and every post you generate will be grounded in it — no more generic AI output that could have been written by anyone.
+Replace generic AI output with reasoning-based retrieval grounded in your own source material. Built on [VectifyAI/PageIndex](https://github.com/VectifyAI/PageIndex) instead of flat vector stores.
 
-- **Document ingestion:** Upload PDFs, DOCX files, CSVs, and data sheets. Connect Confluence, Notion, Google Drive, or OneDrive via OAuth.
-- **RAG pipeline:** Uploaded content is chunked, embedded, and stored in a vector database (pgvector / Pinecone) isolated per organization.
-- **Retrieval at generation time:** The most relevant passages from your knowledge base are retrieved and injected into every section draft as authoritative context — with source provenance so editors can verify citations.
-- **Freshness scoring:** Documents older than 18 months are down-ranked so stale content doesn't crowd out recent product updates.
+- **Hierarchical indexing:** Every uploaded document (PDF, DOCX, Notion page, Google Drive file) is parsed into a Tree Index — Chapters → Sections → Paragraphs — so the retrieval system understands structure, not just similarity scores.
+- **Two-stage reasoning retrieval:** Stage 1 — the LLM scans the Tree Index to identify relevant branches for the current blog topic. Stage 2 — it drills into those specific nodes to extract precise, authoritative data. No flat embedding lookup; no hallucinated citations.
+- **Source provenance:** Every generated section carries a full citation path (e.g., `Google Drive › 2026_Tariff_Spec.pdf › Section 3.2`) so editors can verify technical accuracy against the original document.
+- **Freshness scoring:** Nodes from documents with a `last_modified` date older than 18 months are automatically down-ranked so stale content doesn't crowd out recent product updates.
 
-### Pillar 2 — GitHub → Blog Pipeline
+### Pillar 2 — GitHub → Blog Pipeline *(The Narrative Diff Engine)*
 
-Engineering teams produce enormous documentation value in READMEs, PR descriptions, and release notes that never reaches the company blog. This pipeline closes that gap automatically.
+Engineering teams produce enormous documentation value in PRs and release notes that never reaches the blog. This event-driven pipeline closes that gap automatically.
 
-- **GitHub App integration:** Install on any org; opt specific repos in or out.
-- **Trigger events:** Release tags, PR merges labeled `blog-worthy`, significant README changes, and a weekly commit digest all trigger automatic draft creation.
-- **Diff summarizer:** Extracts the "what changed and why" narrative from git diffs before passing to the generation pipeline.
-- **Draft review queue:** Auto-generated posts land in a *Pending Review* inbox — editors approve, edit, or discard before anything is published.
-- **Security:** HMAC webhook validation, secrets scanning (trufflehog) before any diff reaches the LLM, and raw code is never stored.
+- **GitHub App integration:** Webhook listeners for `PR_MERGED` (filtered to the `blog-worthy` label) and `RELEASE_PUBLISHED` trigger automatic draft creation — no manual hand-off required.
+- **Functional narrative extraction:** An LLM "Narrator" receives the PR description, commit history, and code delta and extracts the *Why* and *Impact* of the change — ignoring boilerplate and focusing on what actually matters to a technical reader.
+- **Security sandbox:** Every diff is scanned by TruffleHog or Gitleaks before it touches the LLM. If a secret (API key, credential, token) is detected, generation fails instantly and the event is flagged for review.
+- **Draft review inbox:** Generated posts land in a *Pending* state with the original GitHub PR linked side-by-side — editors approve, edit, or discard before anything is published.
 
-### Pillar 3 — Prompt Templates & Brand Config
+### Pillar 3 — Prompt Templates & Brand Config *(The Governance Layer)*
 
-Define your company's writing rules once. Every generation call inherits them automatically, with role-based controls over who can change what.
+Define your company's writing rules once. Every generation call inherits them automatically, with role-based controls over who can override what.
 
-- **Variable registry:** Admins configure org-level variables — `{{brand_voice}}`, `{{target_audience}}`, `{{forbidden_claims}}`, `{{product_names}}`, `{{cta_template}}` — that are injected into every prompt.
-- **Template inheritance:** Post-level overrides → topic-level templates → org defaults → system defaults. Highest specificity wins.
-- **Role-based access:** Org Admins lock sensitive variables (legal copy, pricing language); Content Managers own topic templates; Writers get per-post overrides on unlocked fields only.
-- **Proprietary context blocks:** Multi-paragraph positioning statements, regulatory boilerplate, and internal glossaries injected verbatim for relevant post categories.
-- **Auditability:** Every draft records which variable snapshot was active at generation time.
+- **Variable registry:** A CRUD interface lets admins define org-level variables — `{{brand_voice}}`, `{{target_audience}}`, `{{forbidden_claims}}`, `{{cta_template}}` — injected into every prompt automatically.
+- **Highest-specificity inheritance:** Post-level overrides beat topic-level templates, which beat org defaults. Writers always work within the guardrails their team has set, never around them.
+- **Proprietary context blocks:** Admins store multi-paragraph blocks — legal disclaimers, mission statements, pricing language — that are injected *verbatim* into the prompt, bypassing the LLM's tendency to paraphrase sensitive copy.
+- **Role-based access (RBAC):** Org Admins can lock specific variables so Content Managers and Writers cannot modify them during drafting. Every draft records which variable snapshot was active at generation time for full auditability.
 
-### Pillar 4 — Automatic SEO & Internal Linking
+### Pillar 4 — Automatic SEO & Internal Linking *(The Firecrawl Architect)*
 
-Every post you publish is a potential SEO asset — but only if it's properly connected to the rest of your content. This pillar analyzes your entire blog catalog and automatically weaves in the internal links, anchor text, and metadata that search engines reward.
+Use real-time web crawling to map your live blog and automate site architecture and search optimization — no manual tagging or spreadsheet maintenance.
 
-- **Content graph:** All published posts are indexed by topic, keyword, and semantic embedding. When a new post is generated, the system identifies the most relevant existing posts and injects contextual internal links at the most natural anchor points in the prose.
-- **Anchor text optimization:** Links are inserted with descriptive, keyword-rich anchor text derived from the target post's title and focus keywords — never generic "click here" text.
-- **Keyword gap analysis:** Before drafting, the system scans top-ranking competitor pages for the target topic and surfaces keywords your existing catalog is missing. Those gaps are passed to the outline generator so your new post fills them.
-- **Meta description & title tag generation:** Each post gets an auto-generated SEO title (≤60 chars) and meta description (≤155 chars) optimized for click-through rate, with primary and secondary keywords placed naturally.
-- **Canonical & schema markup:** Structured data (Article, BreadcrumbList, FAQ where applicable) is emitted automatically on export so search engines can parse your content without guesswork.
-- **Backlink suggestions:** Post-generation, the system surfaces a shortlist of high-authority external pages that are topically relevant and likely to link back — giving your outreach team a pre-qualified target list rather than a cold prospecting problem.
+- **Live site discovery:** The [Firecrawl](https://www.firecrawl.dev/) `/crawl` endpoint indexes every published URL on your domain, extracting titles, keywords, and clean Markdown content into a live site graph.
+- **Semantic link injection:** When a new post is generated, its content is compared against the Firecrawl index. The system identifies natural anchor points in the prose and injects internal links to the most semantically relevant existing posts — with descriptive anchor text derived from the target post's H1, never generic "click here" text.
+- **Competitive gap analysis:** Firecrawl scrapes the top 3 ranking competitor pages for your target topic. Their heading structures are analyzed and any sub-topics they cover that your draft is missing are surfaced as *Keyword Gaps* and passed back to the outline generator before drafting begins.
+- **Schema & metadata generation:** Every export automatically includes JSON-LD structured data (`Article`, `BreadcrumbList`, `FAQ` where applicable) and optimized meta tags (title ≤60 chars, description ≤155 chars) built from the live site's existing structure.
 
 ---
 
